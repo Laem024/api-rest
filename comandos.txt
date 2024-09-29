@@ -1,0 +1,7 @@
+ionic capacitor run android --livereload --external
+
+go run cmd\main.go
+
+ionic build
+ionic cap sync android
+ionic cap open android

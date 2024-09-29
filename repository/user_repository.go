@@ -4,6 +4,7 @@ import (
     "database/sql"
     "fmt"
     "paralelos/model"
+    "golang.org/x/crypto/bcrypt"
 )
 
 // Aquí puedes agregar lógica para interactuar con una base de datos
@@ -43,4 +44,57 @@ func GetUserByID(id uint) (model.User, bool, error) {
     }
 
     return user, true, nil
+}
+
+// Registrar un nuevo usuario
+func RegisterUser(name, email, password string) error {
+    db := GetDB()
+
+    // Verificar si el usuario ya existe
+    var exists bool
+    err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email=$1)", email).Scan(&exists)
+    if err != nil {
+        return fmt.Errorf("Error al verificar usuario: %v", err)
+    }
+
+    if exists {
+        return fmt.Errorf("El usuario con el email ya existe")
+    }
+
+    // Generar un hash de la contraseña
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+    if err != nil {
+        return fmt.Errorf("Error al generar hash de la contraseña: %v", err)
+    }
+
+    // Insertar el nuevo usuario en la base de datos
+    _, err = db.Exec("INSERT INTO users (name, email, password) VALUES ($1, $2, $3)", name, email, string(hashedPassword))
+    if err != nil {
+        return fmt.Errorf("Error al registrar usuario: %v", err)
+    }
+
+    return nil
+}
+
+
+func AuthenticateUser(email, password string) (model.User, bool, error) {
+    db := GetDB()
+
+    // Buscar el usuario por email
+    var user model.User
+    err := db.QueryRow("SELECT id, name, email, password FROM users WHERE email = $1", email).Scan(&user.ID, &user.Name, &user.Email, &user.Password)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return user, false, nil // Usuario no encontrado
+        }
+        return user, false, fmt.Errorf("Error al autenticar usuario: %v", err)
+    }
+
+    // Comparar la contraseña proporcionada con el hash almacenado en la base de datos
+    err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+    if err != nil {
+        return user, false, nil // Contraseña incorrecta
+    }
+
+    return user, true, nil // Usuario autenticado correctamente
 }
