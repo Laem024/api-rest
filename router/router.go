@@ -23,5 +23,10 @@ func SetupRouter() *gin.Engine {
         authorized.GET("/users/:id", controller.GetUserByID)
     }
 
+    // Rutas para obtener nombres y correos electrónicos
+    r.GET("/users/names", controller.GetUserNames)
+    r.GET("/users/emails", controller.GetUserEmails)
+    r.GET("/users/names_emails", controller.GetUserNamesAndEmails)
+
     return r
 }

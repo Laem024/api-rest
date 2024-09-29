@@ -5,3 +5,7 @@ go run cmd\main.go
 ionic build
 ionic cap sync android
 ionic cap open android
+
+
+emulator -list-avds
+emulator -avd <nombre_del_emulador>
